@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Env
+.env
+*.env.local
+
+# SQLite databases
+*.db
+*.db-journal
+*.sqlite
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Test artifacts
+playwright-report/
+test-results/
+coverage/
+
+# Large data files (keep the small dev sample)
+data/*.csv
+!data/credit_card_transactions_sample_50k.csv
