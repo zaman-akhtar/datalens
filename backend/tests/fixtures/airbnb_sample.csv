@@ -1,0 +1,16 @@
+listing_id,neighbourhood,room_type,price,minimum_nights,number_of_reviews,reviews_per_month,availability_365
+1,Manhattan,Entire home/apt,150,2,45,1.2,200
+2,Brooklyn,Private room,75,1,120,2.5,180
+3,Queens,Entire home/apt,90,3,30,0.8,250
+4,Manhattan,Private room,110,1,80,1.5,300
+5,Brooklyn,Entire home/apt,200,2,60,1.0,220
+6,Bronx,Private room,55,1,15,0.4,290
+7,Manhattan,Entire home/apt,300,5,200,3.5,150
+8,Brooklyn,Shared room,40,1,5,0.3,310
+9,Queens,Private room,65,2,25,0.6,275
+10,Manhattan,Entire home/apt,250,3,150,2.8,180
+11,Brooklyn,Private room,80,1,90,1.7,260
+12,Manhattan,Entire home/apt,180,2,55,1.1,210
+13,Queens,Shared room,35,1,8,0.4,330
+14,Brooklyn,Entire home/apt,130,2,40,0.9,240
+15,Manhattan,Private room,95,1,110,2.2,200
