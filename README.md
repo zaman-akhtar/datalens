@@ -35,7 +35,7 @@ If Gemini is rate-limited the day of the demo, you can swap to OpenAI by changin
 
 ```bash
 # 1. Clone
-git clone https://github.com/[your-org]/datalens.git
+git clone https://github.com/zaman-akhtar/datalens.git
 cd datalens
 
 # 2. Configure environment

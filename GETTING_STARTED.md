@@ -18,7 +18,7 @@ Welcome to your DataLens project starter template. This guide walks you through 
 3. Create a GitHub repository for your team
 4. Push:
    ```bash
-   git remote add origin <your-repo-url>
+   git remote add origin https://github.com/zaman-akhtar/datalens.git
    git branch -M main
    git push -u origin main
    ```
