@@ -20,8 +20,9 @@ def _ensure_parent(path: Path) -> None:
 
 def _connect(path: Path) -> sqlite3.Connection:
     _ensure_parent(path)
-    conn = sqlite3.connect(path, detect_types=sqlite3.PARSE_DECLTYPES)
+    conn = sqlite3.connect(path, detect_types=sqlite3.PARSE_DECLTYPES, timeout=30)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 

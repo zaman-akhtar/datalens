@@ -9,13 +9,13 @@ export function FilterBar({ columns }: { columns: ColumnProfile[] }) {
 
   if (!filterable.length)
     return (
-      <div data-testid="filter-bar" className="text-xs text-slate-400 p-2">
+      <div data-testid="filters-bar" className="text-xs text-slate-400 p-2">
         No categorical filters available for this dataset.
       </div>
     );
 
   return (
-    <div data-testid="filter-bar" className="flex gap-2 flex-wrap p-2 bg-slate-100 rounded">
+    <div data-testid="filters-bar" className="flex gap-2 flex-wrap p-2 bg-slate-100 rounded">
       {filterable.map((col) => (
         <select
           key={col.safe_name}

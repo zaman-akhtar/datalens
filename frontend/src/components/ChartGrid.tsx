@@ -61,7 +61,7 @@ export function ChartGrid() {
     );
 
   return (
-    <div data-testid="chart-grid" className="grid grid-cols-1 md:grid-cols-2 gap-3">
+    <div data-testid="charts-grid" className="grid grid-cols-1 md:grid-cols-2 gap-3">
       {specs.map((spec, i) => {
         const rows = results[i]?.rows ?? [];
         if (!rows.length && results[i])

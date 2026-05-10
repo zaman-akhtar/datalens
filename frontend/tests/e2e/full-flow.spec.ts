@@ -1,6 +1,8 @@
 import { test, expect } from "@playwright/test";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SAMPLE = path.resolve(__dirname, "../../../data/credit_card_transactions_sample_50k.csv");
 
 test("full flow: upload → dashboard → filter → chat → summary", async ({ page }) => {

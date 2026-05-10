@@ -1,6 +1,8 @@
 import { test, expect } from "@playwright/test";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CC = path.resolve(__dirname, "../../../data/credit_card_transactions_sample_50k.csv");
 const AIRBNB = path.resolve(__dirname, "../../../backend/tests/fixtures/airbnb_sample.csv");
 

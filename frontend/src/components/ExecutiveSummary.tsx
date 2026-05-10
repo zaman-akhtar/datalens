@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { useDataset } from "@/hooks/useDataset";
 
@@ -6,21 +6,25 @@ export function ExecutiveSummary() {
   const datasetId = useDataset((s) => s.datasetId);
   const [text, setText] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const cancelRef = useRef(false);
 
   async function load(refresh = false) {
     if (!datasetId) return;
     setBusy(true);
+    cancelRef.current = false;
     try {
       const s = await api.summary(datasetId, refresh);
-      setText(s.text);
+      if (!cancelRef.current) setText(s.text);
     } finally {
-      setBusy(false);
+      if (!cancelRef.current) setBusy(false);
     }
   }
 
   useEffect(() => {
+    cancelRef.current = true;
     setText(null);
     if (datasetId) void load(false);
+    return () => { cancelRef.current = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [datasetId]);
 
@@ -51,9 +55,13 @@ export function ExecutiveSummary() {
           </button>
         </div>
       </div>
-      <p data-testid="summary-text" className="text-sm whitespace-pre-wrap leading-relaxed">
-        {text ?? (busy ? "Generating…" : "")}
-      </p>
+      {text ? (
+        <p data-testid="summary-text" className="text-sm whitespace-pre-wrap leading-relaxed">
+          {text}
+        </p>
+      ) : (
+        <p className="text-sm text-slate-400">{busy ? "Generating…" : ""}</p>
+      )}
     </div>
   );
 }
