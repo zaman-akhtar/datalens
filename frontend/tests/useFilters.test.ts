@@ -2,7 +2,10 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { useFilters } from "@/hooks/useFilters";
 
 describe("useFilters", () => {
-  beforeEach(() => useFilters.getState().clear());
+  beforeEach(() => {
+    localStorage.clear();
+    useFilters.getState().clear();
+  });
 
   it("sets a filter", () => {
     useFilters.getState().setFilter("state", "NY");
@@ -20,5 +23,22 @@ describe("useFilters", () => {
     useFilters.getState().setFilter("b", "2");
     useFilters.getState().clear();
     expect(useFilters.getState().filters).toEqual({});
+  });
+
+  it("persists filters to localStorage on setFilter", () => {
+    useFilters.getState().setFilter("state", "TX");
+    const raw = localStorage.getItem("datalens-filters");
+    expect(raw).not.toBeNull();
+    const stored = JSON.parse(raw!);
+    expect(stored.state.filters.state).toBe("TX");
+  });
+
+  it("restores filters from localStorage on rehydrate", () => {
+    localStorage.setItem(
+      "datalens-filters",
+      JSON.stringify({ state: { filters: { category: "grocery_pos" } }, version: 0 })
+    );
+    useFilters.persist.rehydrate();
+    expect(useFilters.getState().filters).toEqual({ category: "grocery_pos" });
   });
 });

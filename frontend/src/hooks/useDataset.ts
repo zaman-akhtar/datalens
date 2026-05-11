@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 interface DatasetState {
   datasetId: string | null;
@@ -7,9 +8,14 @@ interface DatasetState {
   clear: () => void;
 }
 
-export const useDataset = create<DatasetState>((set) => ({
-  datasetId: null,
-  filename: null,
-  set: (id, filename) => set({ datasetId: id, filename }),
-  clear: () => set({ datasetId: null, filename: null }),
-}));
+export const useDataset = create<DatasetState>()(
+  persist(
+    (set) => ({
+      datasetId: null,
+      filename: null,
+      set: (id, filename) => set({ datasetId: id, filename }),
+      clear: () => set({ datasetId: null, filename: null }),
+    }),
+    { name: "datalens-dataset" }
+  )
+);
