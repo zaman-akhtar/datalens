@@ -36,7 +36,6 @@ coverage/
 pytest-cache-files-*/
 
 # Claude / agent internals
-.agent/
 .claude/
 
 # Binary / generated docs
