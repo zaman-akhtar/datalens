@@ -112,7 +112,7 @@ def pick_charts(profile: DatasetProfile, max_charts: int = 6) -> list[ChartSpec]
             )
         )
 
-    # 4. Boolean indicator → KPI of mean (e.g. fraud rate)
+    # 4. Boolean indicator → KPI positive-rate (count grouped by 0/1; KpiView computes %)
     boolean = _first_boolean(cols)
     if boolean:
         add(
@@ -120,8 +120,8 @@ def pick_charts(profile: DatasetProfile, max_charts: int = 6) -> list[ChartSpec]
                 chart_type="kpi",
                 title=f"{boolean.name} rate",
                 x=boolean.safe_name,
-                agg="mean",
-                note="Mean of a 0/1 column = positive-rate.",
+                agg="count",
+                note="Count grouped by 0/1; KpiView computes the positive-rate percentage.",
             )
         )
 
@@ -169,6 +169,7 @@ def pick_charts(profile: DatasetProfile, max_charts: int = 6) -> list[ChartSpec]
 
     # Fallback — guarantee ≥ 4 picks
     while len(picks) < 4:
+        n_before = len(picks)
         add(
             ChartSpec(
                 chart_type="kpi",
@@ -178,7 +179,7 @@ def pick_charts(profile: DatasetProfile, max_charts: int = 6) -> list[ChartSpec]
                 note="Fallback KPI to satisfy the 4-chart floor.",
             )
         )
-        if len(picks) >= 6:
+        if len(picks) >= 6 or len(picks) == n_before:
             break
 
     return picks[:max_charts]

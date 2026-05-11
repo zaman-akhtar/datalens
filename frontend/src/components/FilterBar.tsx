@@ -26,13 +26,13 @@ export function FilterBar({ columns }: { columns: ColumnProfile[] }) {
           className="border rounded px-2 py-1 text-sm bg-white"
         >
           <option value="">{col.name} (all)</option>
-          {col.sample_values
-            .filter((v) => v !== null && v !== "")
-            .map((v) => (
-              <option key={String(v)} value={String(v)}>
-                {String(v)}
+          {[...new Set(col.sample_values.filter((v) => v !== null && v !== "").map(String))].map(
+            (v) => (
+              <option key={v} value={v}>
+                {v}
               </option>
-            ))}
+            )
+          )}
         </select>
       ))}
       <button onClick={clear} className="text-xs underline px-2 self-center">

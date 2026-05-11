@@ -61,7 +61,8 @@ def _looks_like_datetime(series: pd.Series) -> bool:
 
 def _coerce_datetimes(df: pd.DataFrame) -> pd.DataFrame:
     for col in df.columns:
-        if df[col].dtype == "object" and _looks_like_datetime(df[col]):
+        # pandas 3.x uses StringDtype whose str() is "str" or "string"; legacy uses "object"
+        if str(df[col].dtype) in ("object", "str", "string") and _looks_like_datetime(df[col]):
             df[col] = pd.to_datetime(df[col], errors="coerce")
     return df
 

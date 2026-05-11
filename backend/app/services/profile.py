@@ -7,7 +7,11 @@ from datetime import datetime
 
 import pandas as pd
 
+from app.config import get_settings
 from app.models.dataset import ColumnProfile, DatasetProfile, DatasetSummary, DType
+
+# Keyed by (db_path, dataset_id); datasets are immutable after ingest so this is safe.
+_profile_cache: dict[tuple[str, str], DatasetProfile] = {}
 
 
 class DatasetNotFoundError(KeyError):
@@ -119,6 +123,10 @@ def _parse_ts(v) -> datetime:  # noqa: ANN001
 
 def build_profile(conn: sqlite3.Connection, dataset_id: str) -> DatasetProfile:
     """Profile a previously-ingested dataset."""
+    key = (str(get_settings().db_path), dataset_id)
+    if key in _profile_cache:
+        return _profile_cache[key]
+
     row = _load_catalog_row(conn, dataset_id)
     table = row["table_name"]
     column_meta = json.loads(row["column_meta_json"])
@@ -143,7 +151,7 @@ def build_profile(conn: sqlite3.Connection, dataset_id: str) -> DatasetProfile:
             )
         )
 
-    return DatasetProfile(
+    profile = DatasetProfile(
         dataset_id=dataset_id,
         original_filename=row["original_filename"],
         n_rows=row["n_rows"],
@@ -151,6 +159,8 @@ def build_profile(conn: sqlite3.Connection, dataset_id: str) -> DatasetProfile:
         columns=columns,
         created_at=_parse_ts(row["created_at"]),
     )
+    _profile_cache[key] = profile
+    return profile
 
 
 def get_safe_name_map(conn: sqlite3.Connection, dataset_id: str) -> dict[str, str]:

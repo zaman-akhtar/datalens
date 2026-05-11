@@ -1,8 +1,7 @@
 import type { QueryRow } from "@/lib/types";
 
 export function KpiView({ data, title }: { data: QueryRow[]; title: string }) {
-  // For boolean-rate KPIs, the picker sends agg=mean — but the query engine
-  // returns per-label mean rows. We compute a positive-rate from those.
+  // Boolean-rate KPIs: picker sends agg=count grouped by 0/1; positive-rate computed below.
   let display = "—";
   if (data.length === 1) {
     display = formatNumber(data[0].value);

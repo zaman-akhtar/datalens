@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from datetime import datetime
+from datetime import UTC, datetime
 
 from app.models.query import QueryRequest
 from app.models.summary import Summary
@@ -111,7 +111,7 @@ def generate_summary(
     except Exception:  # noqa: BLE001
         text = _fallback_summary(profile, snapshots)
 
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     conn.execute(
         "INSERT OR REPLACE INTO summaries (dataset_id, text, generated_at) VALUES (?, ?, ?)",
         (dataset_id, text, now),

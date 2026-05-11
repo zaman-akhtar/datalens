@@ -34,7 +34,7 @@ async def upload_csv(file: UploadFile = File(...)) -> UploadAck:  # noqa: B008
         total += len(chunk)
         if total > settings.max_upload_bytes:
             raise HTTPException(
-                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
                 detail=f"File exceeds {settings.max_upload_size_mb} MB cap.",
             )
         chunks.append(chunk)

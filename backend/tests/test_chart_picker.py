@@ -29,7 +29,7 @@ def test_picker_emits_time_series_when_datetime_present(fixtures_dir: Path) -> N
 
 def test_picker_emits_kpi_for_boolean_indicator(fixtures_dir: Path) -> None:
     picks = _picks(fixtures_dir, "with_unnamed.csv")
-    assert any(p.chart_type == "kpi" and p.agg == "mean" for p in picks)
+    assert any(p.chart_type == "kpi" and p.agg == "count" for p in picks)
 
 
 def test_picker_works_on_airbnb_dataset(fixtures_dir: Path) -> None:

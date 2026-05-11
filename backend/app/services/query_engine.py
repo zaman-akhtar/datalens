@@ -106,13 +106,15 @@ def run_query(
     if request.bins and x_col.dtype == "numeric":
         bins = max(2, min(100, int(request.bins)))
         ident = _quote_ident(x_col.safe_name)
+        # If where_sql already contains "WHERE ...", the null check must be "AND", not "WHERE"
+        null_clause = f"AND {ident} IS NOT NULL" if where_sql else f"WHERE {ident} IS NOT NULL"
         sql = (
             f"SELECT CAST(({ident} - (SELECT MIN({ident}) FROM {table_q}{where_sql})) "
             f"/ NULLIF((SELECT (MAX({ident}) - MIN({ident})) / {bins}.0 "
             f"FROM {table_q}{where_sql}), 0) AS INTEGER) AS bin_idx, "
             f"COUNT(*) AS value "
             f"FROM {table_q}{where_sql} "
-            f"WHERE {ident} IS NOT NULL "
+            f"{null_clause} "
             f"GROUP BY bin_idx ORDER BY bin_idx LIMIT ?"
         )
         # WHERE in subqueries needs duplicated params
@@ -137,11 +139,18 @@ def run_query(
 
     # ---- Group by x with aggregation on y (or count) ----
     x_ident = _quote_ident(x_col.safe_name)
+
+    # Scalar aggregate on x with no grouping — used by KPI cards (e.g. AVG(is_fraud))
+    if y_col is None and request.agg != "count":
+        agg_expr = _AGG_SQL[request.agg].format(col=x_ident)
+        sql = f"SELECT {agg_expr} AS value FROM {table_q}{where_sql}"
+        row = conn.execute(sql, params).fetchone()
+        scalar = _to_value(row[0] if row else None)
+        return QueryResult(sql=sql, n_rows=1, rows=[QueryRow(label=None, value=scalar)])
+
     if request.agg == "count":
         agg_expr = "COUNT(*)"
     else:
-        if y_col is None:
-            raise ValueError(f"agg={request.agg} requires a y column")
         agg_expr = _AGG_SQL[request.agg].format(col=_quote_ident(y_col.safe_name))
 
     # For datetime x, bucket by day

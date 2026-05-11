@@ -63,9 +63,11 @@
 > "The chat interface uses Gemini 1.5 Flash with a three-tool agentic loop: `query_data`, `get_column_statistics`, and `generate_chart`. The model picks which tool to call, we execute it against SQLite, feed the result back, and the model synthesizes a grounded answer."
 
 **Point out:**
-- The answer appears with a "Ran SQL" collapsible showing the actual query.
+- The answer appears with a "Tool calls (N)" collapsible showing the tool name, args, and result preview.
 - Try a second question: *"Show me the average transaction amount by state."*
 - The loop is capped at 4 tool calls per turn (hard stop, no runaway loops).
+
+*Note: in MOCK_LLM=1 rehearsal mode the response is an echoed prompt — switch to MOCK_LLM=0 to see live tool calls.*
 
 **Talking point:** *The tool layer is three thin wrapper functions — the business logic already exists in the query engine and profiler. Adding LLM capability was less than 150 lines.*
 
