@@ -31,6 +31,14 @@ dist/
 playwright-report/
 test-results/
 coverage/
+pytest-cache-files-*/
+
+# Claude / agent internals
+.agent/
+.claude/
+
+# Binary / generated docs
+INSTRUCTIONS.docx
 
 # Large data files (keep the small dev sample)
 data/*.csv
