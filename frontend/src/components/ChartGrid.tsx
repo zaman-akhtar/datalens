@@ -2,29 +2,40 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import { useDataset } from "@/hooks/useDataset";
 import { useFilters } from "@/hooks/useFilters";
-import type { ChartSpec, QueryResult } from "@/lib/types";
+import type { ChartSpec, GeoRow, QueryResult } from "@/lib/types";
 import { BarView } from "./chart/Bar";
 import { LineView } from "./chart/Line";
 import { HistogramView } from "./chart/Histogram";
 import { ScatterView } from "./chart/Scatter";
 import { KpiView } from "./chart/Kpi";
+import { GeoBarView } from "./chart/GeoBar";
 
 export function ChartGrid() {
   const datasetId = useDataset((s) => s.datasetId);
   const filters = useFilters((s) => s.filters);
   const [specs, setSpecs] = useState<ChartSpec[] | null>(null);
   const [results, setResults] = useState<Record<number, QueryResult>>({});
+  const [geoData, setGeoData] = useState<GeoRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setSpecs(null);
     setResults({});
+    setGeoData(null);
     if (!datasetId) return;
     api
       .chartPicks(datasetId)
       .then(setSpecs)
       .catch((e) => setError(String(e)));
   }, [datasetId]);
+
+  const hasMapSpec = specs?.some((s) => s.chart_type === "map") ?? false;
+
+  useEffect(() => {
+    if (!datasetId || !hasMapSpec) return;
+    setGeoData(null);
+    api.geo(datasetId).then(setGeoData).catch(() => setGeoData([]));
+  }, [datasetId, hasMapSpec]);
 
   const filterKey = useMemo(() => JSON.stringify(filters), [filters]);
 
@@ -33,9 +44,11 @@ export function ChartGrid() {
     let cancelled = false;
     Promise.all(
       specs.map((spec) =>
-        api.runQuery(datasetId, spec, filters).catch(
-          () => ({ sql: "", n_rows: 0, rows: [] }) as QueryResult
-        )
+        spec.chart_type === "map"
+          ? Promise.resolve({ sql: "", n_rows: 0, rows: [] } as QueryResult)
+          : api.runQuery(datasetId, spec, filters).catch(
+              () => ({ sql: "", n_rows: 0, rows: [] }) as QueryResult
+            )
       )
     ).then((rs) => {
       if (cancelled) return;
@@ -63,6 +76,17 @@ export function ChartGrid() {
   return (
     <div data-testid="charts-grid" className="grid grid-cols-1 md:grid-cols-2 gap-3">
       {specs.map((spec, i) => {
+        if (spec.chart_type === "map") {
+          if (!geoData) return <div key={i} className="rounded border bg-white h-56 animate-pulse" />;
+          if (!geoData.length)
+            return (
+              <div key={i} className="rounded border bg-white p-3 text-xs text-slate-400">
+                {spec.title} — no geographic data
+              </div>
+            );
+          return <GeoBarView key={i} data={geoData} title={spec.title} />;
+        }
+
         const rows = results[i]?.rows ?? [];
         if (!rows.length && results[i])
           return (

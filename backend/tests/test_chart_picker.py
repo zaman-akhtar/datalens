@@ -43,6 +43,11 @@ def test_picker_works_on_airbnb_dataset(fixtures_dir: Path) -> None:
     assert "line" not in chart_types
 
 
+def test_picker_emits_map_for_region_column(fixtures_dir: Path) -> None:
+    picks = _picks(fixtures_dir, "airbnb_sample.csv")
+    assert any(p.chart_type == "map" for p in picks)
+
+
 def test_picker_caps_at_six(fixtures_dir: Path) -> None:
     picks = _picks(fixtures_dir, "airbnb_sample.csv")
     assert len(picks) <= 6

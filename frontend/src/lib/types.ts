@@ -1,5 +1,5 @@
 export type DType = "numeric" | "categorical" | "datetime" | "boolean" | "text";
-export type ChartType = "bar" | "line" | "histogram" | "scatter" | "kpi";
+export type ChartType = "bar" | "line" | "histogram" | "scatter" | "kpi" | "map";
 export type Aggregation = "count" | "sum" | "mean" | "min" | "max" | "median";
 
 export interface ColumnProfile {
@@ -79,3 +79,10 @@ export interface SummaryResponse {
 }
 
 export type FilterMap = Record<string, string | number | null>;
+
+export interface GeoRow {
+  state: string;
+  count: number;
+  fraud_count: number;
+  fraud_rate: number;
+}

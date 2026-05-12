@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.db.schema import init_schema
 from app.db.session import get_conn
-from app.routers import chat, profile, query, summary, upload
+from app.routers import chat, geo, profile, query, summary, upload
 
 
 def create_app() -> FastAPI:
@@ -30,6 +30,7 @@ def create_app() -> FastAPI:
 
     app.include_router(upload.router)
     app.include_router(profile.router)
+    app.include_router(geo.router)
     app.include_router(query.router)
     app.include_router(chat.router)
     app.include_router(summary.router)

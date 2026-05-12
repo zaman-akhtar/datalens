@@ -5,11 +5,19 @@ import { LineView } from "@/components/chart/Line";
 import { HistogramView } from "@/components/chart/Histogram";
 import { ScatterView } from "@/components/chart/Scatter";
 import { KpiView } from "@/components/chart/Kpi";
+import { GeoBarView } from "@/components/chart/GeoBar";
+import type { GeoRow } from "@/lib/types";
 
 const data = [
   { label: "a", value: 10 },
   { label: "b", value: 7 },
   { label: "c", value: 3 },
+];
+
+const geoData: GeoRow[] = [
+  { state: "TX", count: 300, fraud_count: 15, fraud_rate: 0.05 },
+  { state: "CA", count: 200, fraud_count: 4, fraud_rate: 0.02 },
+  { state: "NY", count: 100, fraud_count: 8, fraud_rate: 0.08 },
 ];
 
 describe("chart smoke", () => {
@@ -32,5 +40,9 @@ describe("chart smoke", () => {
   it("renders KpiView", () => {
     const { getByTestId } = render(<KpiView data={[{ label: "rows", value: 1234 }]} title="rows" />);
     expect(getByTestId("chart-kpi")).toBeInTheDocument();
+  });
+  it("renders GeoBarView", () => {
+    const { getByTestId } = render(<GeoBarView data={geoData} title="Geo" />);
+    expect(getByTestId("chart-map")).toBeInTheDocument();
   });
 });

@@ -4,6 +4,7 @@ import type {
   ChatResponse,
   DatasetProfile,
   FilterMap,
+  GeoRow,
   QueryResult,
   SummaryResponse,
   UploadAck,
@@ -73,5 +74,8 @@ export const api = {
   async summary(datasetId: string, refresh = false): Promise<SummaryResponse> {
     const url = `${BASE}/datasets/${datasetId}/summary${refresh ? "?refresh=true" : ""}`;
     return jsonOrThrow<SummaryResponse>(await fetch(url));
+  },
+  async geo(datasetId: string): Promise<GeoRow[]> {
+    return jsonOrThrow<GeoRow[]>(await fetch(`${BASE}/datasets/${datasetId}/geo`));
   },
 };

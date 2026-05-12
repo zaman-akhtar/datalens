@@ -21,10 +21,15 @@ def _first_datetime(cols: list[ColumnProfile]) -> ColumnProfile | None:
 
 
 def _first_low_card_categorical(
-    cols: list[ColumnProfile], cap: int = 20
+    cols: list[ColumnProfile], cap: int = 20, exclude: set[str] | None = None
 ) -> ColumnProfile | None:
     return next(
-        (c for c in cols if c.dtype == "categorical" and 2 <= c.n_unique <= cap),
+        (
+            c for c in cols
+            if c.dtype == "categorical"
+            and 2 <= c.n_unique <= cap
+            and (exclude is None or c.safe_name.lower() not in exclude)
+        ),
         None,
     )
 
@@ -85,8 +90,8 @@ def pick_charts(profile: DatasetProfile, max_charts: int = 6) -> list[ChartSpec]
             )
         )
 
-    # 2. Low-cardinality categorical → bar
-    cat = _first_low_card_categorical(cols)
+    # 2. Low-cardinality categorical → bar (region-like columns reserved for map in rule 5)
+    cat = _first_low_card_categorical(cols, exclude=_REGION_HINTS)
     if cat:
         add(
             ChartSpec(
@@ -125,16 +130,16 @@ def pick_charts(profile: DatasetProfile, max_charts: int = 6) -> list[ChartSpec]
             )
         )
 
-    # 5. Region-like categorical
+    # 5. Region-like categorical → map (bar chart colored by fraud rate)
     region = _first_region_like(cols)
     if region and region.safe_name not in {p.x for p in picks}:
         add(
             ChartSpec(
-                chart_type="bar",
-                title=f"Count by {region.name}",
+                chart_type="map",
+                title=f"Transactions by {region.name}",
                 x=region.safe_name,
                 agg="count",
-                note="Geographic breakdown.",
+                note="Geographic breakdown; color encodes fraud rate where available.",
             )
         )
 
