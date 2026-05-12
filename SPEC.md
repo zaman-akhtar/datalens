@@ -49,7 +49,7 @@ Locked by the project rubric. Concrete library choices below; rationale lives in
 |---|---|---|
 | Frontend framework | React + Vite | React 18.3, Vite 5.x |
 | Styling | Tailwind CSS | 3.4 |
-| UI primitives | shadcn/ui (Radix under the hood) | latest |
+| UI primitives | shadcn/ui (Radix under the hood) — evaluated but not adopted — Tailwind utility classes used directly instead | latest |
 | Chart library | **Recharts** (ADR-002) | 2.12 |
 | Frontend testing | Vitest + React Testing Library | latest |
 | E2E testing | Playwright | 1.45+ |

@@ -20,32 +20,40 @@ We worked **spec-first** end-to-end. SPEC.md was finished and committed before a
 
 ### Example A — Agent over-engineered the schema; ADR-003 redirected it
 
-**Commit context:** During Phase 2 the agent's first instinct was to build an EAV-style `cells` table — one row per (dataset_id, row_idx, column, value). This would have been a nightmare for the LLM tools to query. We stopped, wrote ADR-003 comparing four options, and switched to per-dataset dynamic tables. The agent absorbed the ADR and produced the cleaner `dataset_<id>` design without further prompting.
+**Commit context:** cf63892 — Add SQLite DB layer (schema + session). During Phase 2 the agent's first instinct was to build an EAV-style `cells` table — one row per (dataset_id, row_idx, column, value). This would have been a nightmare for the LLM tools to query. We stopped, wrote ADR-003 comparing four options, and switched to per-dataset dynamic tables. The agent absorbed the ADR and produced the cleaner `dataset_<id>` design without further prompting.
 
 **Lesson:** ADRs aren't documentation theater — they're the agent's guide rails. The 30 minutes spent writing ADR-003 saved an entire phase of rework.
 
+**Skill activated:** documentation-and-adrs — writing ADR-003 with explicit Options, Decision, and Trade-offs sections gave the agent concrete schema constraints before the first line of code was written.
+
 ### Example B — TDD caught a real cache bug that "worked on my machine"
 
-**Commit context:** `services/llm/summary_prompt.py` first version called `datetime.utcnow()` twice — once when inserting, once when returning. The pytest `test_summary_cached_then_refreshed` test failed because the first call's response timestamp didn't match the cached row. Took ~2 minutes to spot from the failing test; would have shown up at demo time as a flickering "generated_at" timestamp.
+**Commit context:** 87368aa — Add LLM layer: provider, orchestrator, tools, summary prompt. `services/llm/summary_prompt.py` first version called `datetime.utcnow()` twice — once when inserting, once when returning. The pytest `test_summary_cached_then_refreshed` test failed because the first call's response timestamp didn't match the cached row. Took ~2 minutes to spot from the failing test; would have shown up at demo time as a flickering "generated_at" timestamp.
 
 **Lesson:** Cache-coherence bugs are exactly what regression tests are for. We would have shipped this without TDD.
 
+**Skill activated:** test-driven-development — `test_summary_cached_then_refreshed` was written before the service; the failing assertion surfaced the double-`datetime.utcnow()` bug in under two minutes.
+
 ### Example C — Spec boundary stopped feature creep
 
-**Commit context:** Mid-Phase 5 the agent suggested adding a "streaming" UX for chat answers. SPEC §9 explicitly lists "LLM streaming UX — answers arrive as a single block" as out-of-scope. We declined, kept the simpler synchronous response model, and shipped on time. The streaming feature would have added a SSE endpoint, message-fragment state machine, and 4–5 new test cases — work we couldn't afford in week 3.
+**Commit context:** 097e1fa — Add chart picker service and chat router. Mid-Phase 5 the agent suggested adding a "streaming" UX for chat answers. SPEC §9 explicitly lists "LLM streaming UX — answers arrive as a single block" as out-of-scope. We declined, kept the simpler synchronous response model, and shipped on time. The streaming feature would have added a SSE endpoint, message-fragment state machine, and 4–5 new test cases — work we couldn't afford in week 3.
 
 **Lesson:** A real Out-of-Scope section earns its keep when the agent (or you) is tempted by shiny.
 
+**Skill activated:** spec-driven-development — SPEC §9's explicit Out-of-Scope list gave us a written decision point; the streaming feature was rejected by name, not by judgment call.
+
 ### Example D — Agent's first chart-picker hardcoded credit-card column names
 
-**Commit context:** Early in Phase 3 the agent's draft chart-picker had `if column == "amt"` and `if column == "category"` hardcoded. The boundary in SPEC §7 ("Never hardcode column names from the credit-card dataset") caught this in code review before merging. Refactored to read the profile shape only — type, cardinality, skew — and the same code now picks 4 charts for both the credit-card sample AND the Airbnb test fixture.
+**Commit context:** 097e1fa — Add chart picker service and chat router. Early in Phase 3 the agent's draft chart-picker had `if column == "amt"` and `if column == "category"` hardcoded. The boundary in SPEC §7 ("Never hardcode column names from the credit-card dataset") caught this in code review before merging. Refactored to read the profile shape only — type, cardinality, skew — and the same code now picks 4 charts for both the credit-card sample AND the Airbnb test fixture.
 
 **Lesson:** Generic-by-design is a constant pressure; spec boundaries are the lever.
+
+**Skill activated:** spec-driven-development — the "Never do" boundary in SPEC §7 (never hardcode column names from the credit-card dataset) flagged the `if column == "amt"` pattern in code review before it merged.
 
 ## 4. What worked well
 
 - **Vertical slices.** Each phase ended with a working app. We never had a half-built feature on `main`.
-- **Tests written first on the backend.** 39 pytest tests; ran in 5 seconds; caught two real bugs during refactors.
+- **Tests written first on the backend.** 53 pytest tests; ran in 5 seconds; caught two real bugs during refactors.
 - **Provider abstraction.** Switching between MockProvider (for tests and demo rehearsal) and GeminiProvider is a one-line config change. We rehearsed the demo three times with the mock — the real Gemini call only happened on demo day.
 - **Per-dataset SQLite tables.** Swapping CSVs is a single `DROP TABLE`. No leakage between datasets, no schema migrations.
 
@@ -66,7 +74,7 @@ We worked **spec-first** end-to-end. SPEC.md was finished and committed before a
 | 3 ADRs (6 pts) | `docs/adrs/001..003-*.md` |
 | Final report (5 pts) | this file |
 | Atomic git history (3 pts) | `git log --oneline` |
-| Test coverage (2 pts) | 43 pytest + 21 Vitest + 2 Playwright suites |
+| Test coverage (2 pts) | 53 pytest + 27 Vitest + 2 Playwright suites |
 | Playwright functional tests (40 pts) | `frontend/tests/e2e/` |
 | Live demo + Q&A (25 pts) | demo recording on submission portal |
 

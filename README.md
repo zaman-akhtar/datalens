@@ -86,10 +86,10 @@ To swap to a completely different dataset (proves DataLens is not credit-card-sp
 ## Tests
 
 ```bash
-# Backend (pytest, ≥ 14 tests — actually 39 across the suite)
+# Backend (pytest, ≥ 14 tests — actually 53 across the suite)
 cd backend && uv run pytest -v
 
-# Frontend components (Vitest, ≥ 7 tests — actually 21)
+# Frontend components (Vitest, ≥ 7 tests — actually 27)
 cd frontend && npm run test
 
 # End-to-end (Playwright — the 40-pt rubric suite). Requires both servers running.

@@ -27,6 +27,15 @@ def test_upload_rejects_non_csv(client: TestClient) -> None:
     assert "csv" in r.json()["detail"].lower()
 
 
+def test_upload_rejects_empty_file(client: TestClient) -> None:
+    r = client.post(
+        "/api/upload",
+        files={"file": ("empty.csv", b"", "text/csv")},
+    )
+    assert r.status_code == 400
+    assert "empty" in r.json()["detail"].lower()
+
+
 def test_upload_rejects_oversize(
     client: TestClient, monkeypatch
 ) -> None:
