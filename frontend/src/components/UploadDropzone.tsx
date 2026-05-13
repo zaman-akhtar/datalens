@@ -7,12 +7,19 @@ export function UploadDropzone() {
   const setDataset = useDataset((s) => s.set);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   async function handleFile(file: File) {
     setBusy(true);
     setError(null);
+    setNotice(null);
     try {
       const ack = await api.upload(file);
+      if (ack.sampled_from) {
+        setNotice(
+          `Large file detected — loaded a representative sample of ${ack.n_rows.toLocaleString()} rows from ${ack.sampled_from.toLocaleString()} total.`
+        );
+      }
       setDataset(ack.dataset_id, ack.original_filename);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -51,6 +58,11 @@ export function UploadDropzone() {
           if (file) void handleFile(file);
         }}
       />
+      {notice && (
+        <p data-testid="upload-notice" className="mt-3 text-sm text-amber-600">
+          {notice}
+        </p>
+      )}
       {error && (
         <p data-testid="upload-error" className="mt-3 text-sm text-red-600">
           {error}

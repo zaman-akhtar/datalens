@@ -45,7 +45,7 @@ async def upload_csv(file: UploadFile = File(...)) -> UploadAck:  # noqa: B008
 
     try:
         with get_conn() as conn:
-            dataset_id, n_rows, n_cols = ingest_csv(conn, csv_bytes, filename)
+            dataset_id, n_rows, n_cols, sampled_from = ingest_csv(conn, csv_bytes, filename)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
@@ -54,4 +54,5 @@ async def upload_csv(file: UploadFile = File(...)) -> UploadAck:  # noqa: B008
         original_filename=filename,
         n_rows=n_rows,
         n_cols=n_cols,
+        sampled_from=sampled_from,
     )

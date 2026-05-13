@@ -9,3 +9,7 @@ class UploadAck(BaseModel):
     original_filename: str
     n_rows: int
     n_cols: int
+    sampled_from: int | None = Field(
+        default=None,
+        description="Original row count before sampling. Set when the file exceeded the row cap.",
+    )

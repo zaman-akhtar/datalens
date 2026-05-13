@@ -118,14 +118,18 @@ def _insert_catalog_row(
     )
 
 
+_MAX_ROWS = 150_000
+
+
 def ingest_csv(
     conn: sqlite3.Connection,
     csv_bytes: bytes,
     original_filename: str,
-) -> tuple[str, int, int]:
-    """Ingest CSV bytes into SQLite. Returns (dataset_id, n_rows, n_cols).
+) -> tuple[str, int, int, int | None]:
+    """Ingest CSV bytes into SQLite. Returns (dataset_id, n_rows, n_cols, sampled_from).
 
-    Raises ValueError on parse failure.
+    sampled_from is the original row count when the file was automatically sampled;
+    None when the full file is loaded. Raises ValueError on parse failure.
     """
     init_schema(conn)
 
@@ -136,6 +140,11 @@ def ingest_csv(
 
     if df.shape[1] == 0:
         raise ValueError("CSV has no columns")
+
+    sampled_from: int | None = None
+    if len(df) > _MAX_ROWS:
+        sampled_from = len(df)
+        df = df.sample(n=_MAX_ROWS, random_state=42).reset_index(drop=True)
 
     df = _coerce_datetimes(df)
 
@@ -160,9 +169,10 @@ def ingest_csv(
         column_meta=column_meta,
     )
 
-    return dataset_id, int(df.shape[0]), int(df.shape[1])
+    return dataset_id, int(df.shape[0]), int(df.shape[1]), sampled_from
 
 
 def ingest_csv_path(conn: sqlite3.Connection, csv_path: Path) -> tuple[str, int, int]:
-    """Convenience wrapper for tests."""
-    return ingest_csv(conn, csv_path.read_bytes(), csv_path.name)
+    """Convenience wrapper for tests — drops the sampled_from 4th element."""
+    dataset_id, n_rows, n_cols, _ = ingest_csv(conn, csv_path.read_bytes(), csv_path.name)
+    return dataset_id, n_rows, n_cols

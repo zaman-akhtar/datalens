@@ -30,6 +30,7 @@ export interface UploadAck {
   original_filename: string;
   n_rows: number;
   n_cols: number;
+  sampled_from?: number;
 }
 
 export interface ChartSpec {

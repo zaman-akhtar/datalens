@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     backend_port: int = 8000
     frontend_port: int = 5173
     database_url: str = "sqlite:///./datalens.db"
-    max_upload_size_mb: int = 50
+    max_upload_size_mb: int = 500
     max_query_rows: int = 5000
     max_tool_iterations: int = 4
 
