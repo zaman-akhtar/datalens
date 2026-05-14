@@ -16,13 +16,18 @@ from app.services.llm.provider import (
     serialize_tool_result,
 )
 from app.services.llm.tools import TOOL_FUNCTIONS, TOOL_SCHEMAS
+from app.services.profile import build_profile
 
-SYSTEM_PROMPT = (
-    "You are DataLens, a data analytics assistant. The user has uploaded a CSV. "
-    "You have three tools: query_data (aggregations), get_column_statistics "
-    "(per-column stats), generate_chart (return a chart spec). Pick exactly one "
-    "tool per turn for at most {max} turns; when you have enough information, "
-    "answer in one short paragraph and cite the SQL or chart spec you used."
+_SYSTEM_BASE = (
+    "You are DataLens, a data analytics assistant. The user has uploaded a CSV dataset.\n"
+    "Available columns:\n{columns}\n\n"
+    "You have three tools:\n"
+    "  • query_data — run aggregations (count/sum/mean/min/max grouped by a column)\n"
+    "  • get_column_statistics — descriptive stats for one column\n"
+    "  • generate_chart — return a chart spec the UI will render\n\n"
+    "Rules: use at most {max} tool calls per reply. When you have enough information, "
+    "answer in one concise paragraph and cite the key numbers you found. "
+    "Always refer to columns by their exact safe_name shown above."
 )
 
 
@@ -74,14 +79,29 @@ def chat_turn(
 
     # Build the messages array (we keep it simple — full history per turn for MVP).
     history_rows = conn.execute(
-        """SELECT role, content FROM chat_messages
+        """SELECT role, content, tool_calls_json FROM chat_messages
            WHERE dataset_id = ? AND conversation_id = ?
            ORDER BY id ASC""",
         (dataset_id, conv_id),
     ).fetchall()
-    messages: list[dict[str, Any]] = [{"role": r["role"], "content": r["content"]} for r in history_rows]
+    messages: list[dict[str, Any]] = [
+        {
+            "role": r["role"],
+            "content": r["content"],
+            **({"tool_calls_json": r["tool_calls_json"]} if r["tool_calls_json"] else {}),
+        }
+        for r in history_rows
+    ]
 
-    system = SYSTEM_PROMPT.format(max=settings.max_tool_iterations)
+    # Build system prompt with schema so the LLM knows column names upfront.
+    profile = build_profile(conn, dataset_id)
+    col_lines = "\n".join(
+        f"  - {c.safe_name} ({c.dtype}, {c.n_unique} unique values)"
+        + (f" — original name: '{c.name}'" if c.name != c.safe_name else "")
+        for c in profile.columns
+        if not c.is_index
+    )
+    system = _SYSTEM_BASE.format(columns=col_lines, max=settings.max_tool_iterations)
 
     tool_records: list[ToolCallRecord] = []
     max_iters = settings.max_tool_iterations
@@ -119,7 +139,11 @@ def chat_turn(
                     serialized,
                     tool_calls_json=json.dumps({"name": call.name, "args": call.args}),
                 )
-                messages.append({"role": "tool", "content": serialized})
+                messages.append({
+                    "role": "tool",
+                    "content": serialized,
+                    "tool_calls_json": json.dumps({"name": call.name, "args": call.args}),
+                })
             if i == max_iters - 1:
                 # Used last allowed iteration on a tool — flag partial.
                 partial = True

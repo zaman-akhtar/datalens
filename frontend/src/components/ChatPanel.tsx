@@ -52,13 +52,13 @@ export function ChatPanel() {
   }
 
   if (!datasetId)
-    return <div className="p-3 text-sm text-slate-400">Upload a CSV to start chatting.</div>;
+    return <div className="p-3 text-sm text-gray-500">Upload a CSV to start chatting.</div>;
 
   return (
-    <div data-testid="chat-panel" className="rounded border bg-white p-3 flex flex-col h-full">
-      <div data-testid="chat-messages" className="flex-1 overflow-y-auto space-y-3 pr-1 max-h-[480px]">
+    <div data-testid="chat-panel" className="rounded-xl border border-gray-700/30 bg-gray-900/60 p-3 flex flex-col h-full">
+      <div data-testid="chat-messages" className="flex-1 overflow-y-auto space-y-3 pr-1">
         {messages.length === 0 && (
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-gray-500">
             Ask a question — try "which category has the most rows?"
           </p>
         )}
@@ -66,16 +66,18 @@ export function ChatPanel() {
           <div key={i} className={m.role === "user" ? "text-right" : "text-left"}>
             <div
               className={
-                "inline-block rounded px-2 py-1 text-sm max-w-[90%] " +
-                (m.role === "user" ? "bg-blue-100" : "bg-slate-100")
+                "inline-block rounded-lg px-3 py-1.5 text-sm max-w-[90%] " +
+                (m.role === "user"
+                  ? "bg-indigo-600/70 text-white"
+                  : "bg-gray-800/80 text-gray-200")
               }
             >
               {m.content}
             </div>
             {m.toolCalls?.length ? (
-              <details className="mt-1 text-xs text-slate-500">
+              <details className="mt-1 text-xs text-gray-500">
                 <summary className="cursor-pointer">Tool calls ({m.toolCalls.length})</summary>
-                <pre className="bg-slate-50 p-2 mt-1 overflow-x-auto whitespace-pre-wrap break-words">
+                <pre className="bg-gray-800/60 border border-gray-700/30 rounded p-2 mt-1 overflow-x-auto whitespace-pre-wrap break-words text-gray-400">
                   {m.toolCalls
                     .map((t) => `→ ${t.name}(${JSON.stringify(t.args)})\n${t.result_preview}`)
                     .join("\n\n")}
@@ -94,7 +96,7 @@ export function ChatPanel() {
       >
         <input
           data-testid="chat-input"
-          className="flex-1 border rounded px-2 py-1 text-sm"
+          className="flex-1 bg-gray-800/60 border border-gray-700/50 rounded-lg px-3 py-1.5 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-indigo-500/60"
           placeholder="Ask anything…"
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -103,7 +105,7 @@ export function ChatPanel() {
         <button
           type="submit"
           data-testid="chat-send"
-          className="px-3 py-1 bg-blue-600 text-white rounded text-sm disabled:opacity-50"
+          className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm disabled:opacity-40 transition-colors"
           disabled={busy || !input.trim()}
         >
           {busy ? "…" : "Send"}

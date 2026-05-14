@@ -13,12 +13,16 @@ from app.models.dataset import ColumnProfile, DatasetProfile, DatasetSummary, DT
 # Keyed by (db_path, dataset_id); datasets are immutable after ingest so this is safe.
 _profile_cache: dict[tuple[str, str], DatasetProfile] = {}
 
+# Read at most this many rows into pandas for distribution stats (mean/skew/sample).
+# n_unique is fetched accurately from the full table via SQL separately.
+_PROFILE_SAMPLE = 10_000
+
 
 class DatasetNotFoundError(KeyError):
     """Raised when the dataset id has no catalog row."""
 
 
-def _classify_dtype(series: pd.Series) -> DType:
+def _classify_dtype(series: pd.Series, n_unique: int, total_rows: int) -> DType:
     """Profiler's view of the column type — independent of the storage dtype."""
     if pd.api.types.is_datetime64_any_dtype(series):
         return "datetime"
@@ -26,13 +30,11 @@ def _classify_dtype(series: pd.Series) -> DType:
         return "boolean"
     if pd.api.types.is_numeric_dtype(series):
         # Treat 0/1 numeric as boolean if cardinality ≤ 2
-        if series.dropna().isin([0, 1]).all() and series.nunique(dropna=True) <= 2:
+        if series.dropna().isin([0, 1]).all() and n_unique <= 2:
             return "boolean"
         return "numeric"
-    # object — categorical if low cardinality, else text
-    nuniq = series.nunique(dropna=True)
-    n = len(series)
-    if n > 0 and (nuniq <= 50 or (nuniq / n) < 0.05):
+    # object — categorical if low cardinality relative to the full dataset
+    if total_rows > 0 and (n_unique <= 50 or (n_unique / total_rows) < 0.05):
         return "categorical"
     return "text"
 
@@ -53,11 +55,17 @@ def _safe_value(v):  # noqa: ANN001, ANN202
     return str(v)
 
 
-def _profile_column(name: str, safe_name: str, series: pd.Series, is_index: bool) -> ColumnProfile:
+def _profile_column(
+    name: str,
+    safe_name: str,
+    series: pd.Series,
+    is_index: bool,
+    n_unique: int,
+    total_rows: int,
+) -> ColumnProfile:
     n = len(series)
     null_pct = float(series.isna().mean()) if n else 0.0
-    n_unique = int(series.nunique(dropna=True))
-    dtype = _classify_dtype(series)
+    dtype = _classify_dtype(series, n_unique, total_rows)
     sample_values = [_safe_value(v) for v in series.dropna().head(5).tolist()]
 
     cmin = cmax = cmean = cskew = None
@@ -84,6 +92,22 @@ def _profile_column(name: str, safe_name: str, series: pd.Series, is_index: bool
         mean=cmean,
         skew=cskew,
     )
+
+
+def _quote(name: str) -> str:
+    return '"' + name.replace('"', '""') + '"'
+
+
+def _sql_n_unique(conn: sqlite3.Connection, table: str, safe_names: list[str]) -> dict[str, int]:
+    """One-pass COUNT(DISTINCT) for all columns — accurate even when pandas uses a sample."""
+    if not safe_names:
+        return {}
+    select = ", ".join(f"COUNT(DISTINCT {_quote(s)})" for s in safe_names)
+    try:
+        row = conn.execute(f"SELECT {select} FROM {_quote(table)}").fetchone()
+        return {safe_names[i]: int(row[i]) for i in range(len(safe_names))}
+    except Exception:  # noqa: BLE001
+        return {}
 
 
 def _load_catalog_row(conn: sqlite3.Connection, dataset_id: str) -> sqlite3.Row:
@@ -130,24 +154,38 @@ def build_profile(conn: sqlite3.Connection, dataset_id: str) -> DatasetProfile:
     row = _load_catalog_row(conn, dataset_id)
     table = row["table_name"]
     column_meta = json.loads(row["column_meta_json"])
+    total_rows: int = row["n_rows"]
 
-    df = pd.read_sql_query(f'SELECT * FROM "{table}"', conn)
+    # Sample pandas read for distribution stats — fast even for large tables.
+    sample_sql = (
+        f'SELECT * FROM {_quote(table)} LIMIT {_PROFILE_SAMPLE}'
+        if total_rows > _PROFILE_SAMPLE
+        else f'SELECT * FROM {_quote(table)}'
+    )
+    df = pd.read_sql_query(sample_sql, conn)
     for meta in column_meta:
         safe = meta["safe_name"]
         if safe in df.columns and "datetime" in meta["pandas_dtype"]:
             df[safe] = pd.to_datetime(df[safe], errors="coerce")
+
+    # Accurate n_unique from the full table — one SQL scan, all columns.
+    present_safe = [m["safe_name"] for m in column_meta if m["safe_name"] in df.columns]
+    n_unique_map = _sql_n_unique(conn, table, present_safe)
 
     columns: list[ColumnProfile] = []
     for meta in column_meta:
         safe = meta["safe_name"]
         if safe not in df.columns:
             continue
+        n_unique = n_unique_map.get(safe, int(df[safe].nunique(dropna=True)))
         columns.append(
             _profile_column(
                 name=meta["name"],
                 safe_name=safe,
                 series=df[safe],
                 is_index=bool(meta.get("is_index", False)),
+                n_unique=n_unique,
+                total_rows=total_rows,
             )
         )
 

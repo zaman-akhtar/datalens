@@ -41,6 +41,7 @@ export function ChartGrid() {
 
   useEffect(() => {
     if (!datasetId || !specs) return;
+    setResults({});
     let cancelled = false;
     Promise.all(
       specs.map((spec) =>
@@ -63,12 +64,19 @@ export function ChartGrid() {
   }, [datasetId, specs, filterKey]);
 
   if (!datasetId) return null;
-  if (error) return <div className="p-3 text-red-600 text-sm">{error}</div>;
-  if (!specs)
+  if (error) return <div className="p-3 text-red-400 text-sm">{error}</div>;
+
+  const skeletonCount = specs?.length ?? 4;
+  const queriesLoading = specs !== null && specs.length > 0 && Object.keys(results).length < specs.length;
+
+  if (!specs || queriesLoading)
     return (
       <div data-testid="chart-grid-loading" className="grid grid-cols-2 gap-3">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="rounded border bg-white h-56 animate-pulse" />
+        {Array.from({ length: skeletonCount }).map((_, i) => (
+          <div
+            key={i}
+            className="rounded-xl border border-gray-700/30 bg-gray-900/40 h-[268px] animate-pulse"
+          />
         ))}
       </div>
     );
@@ -77,10 +85,19 @@ export function ChartGrid() {
     <div data-testid="charts-grid" className="grid grid-cols-1 md:grid-cols-2 gap-3">
       {specs.map((spec, i) => {
         if (spec.chart_type === "map") {
-          if (!geoData) return <div key={i} className="rounded border bg-white h-56 animate-pulse" />;
+          if (!geoData)
+            return (
+              <div
+                key={i}
+                className="rounded-xl border border-gray-700/30 bg-gray-900/40 h-[268px] animate-pulse"
+              />
+            );
           if (!geoData.length)
             return (
-              <div key={i} className="rounded border bg-white p-3 text-xs text-slate-400">
+              <div
+                key={i}
+                className="rounded-xl border border-gray-700/30 bg-gray-900/40 p-3 text-xs text-gray-500"
+              >
                 {spec.title} — no geographic data
               </div>
             );
@@ -90,7 +107,10 @@ export function ChartGrid() {
         const rows = results[i]?.rows ?? [];
         if (!rows.length && results[i])
           return (
-            <div key={i} className="rounded border bg-white p-3 text-xs text-slate-400">
+            <div
+              key={i}
+              className="rounded-xl border border-gray-700/30 bg-gray-900/40 p-3 text-xs text-gray-500"
+            >
               {spec.title} — no data after filters
             </div>
           );

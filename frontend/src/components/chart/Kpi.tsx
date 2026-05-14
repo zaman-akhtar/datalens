@@ -13,9 +13,9 @@ export function KpiView({ data, title }: { data: QueryRow[]; title: string }) {
     display = formatNumber(data.reduce((s, r) => s + r.value, 0));
   }
   return (
-    <div className="rounded border bg-white p-3 flex flex-col items-center justify-center" data-testid="chart-kpi">
-      <div className="text-xs text-slate-500">{title}</div>
-      <div className="text-3xl font-semibold mt-2">{display}</div>
+    <div className="rounded-xl border border-gray-700/30 bg-gray-900/60 p-3 flex flex-col items-center justify-center" data-testid="chart-kpi">
+      <div className="text-xs text-gray-400">{title}</div>
+      <div className="text-3xl font-semibold mt-2 text-indigo-300">{display}</div>
     </div>
   );
 }

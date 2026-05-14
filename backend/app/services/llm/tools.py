@@ -38,7 +38,7 @@ TOOL_SCHEMAS = [
                     "type": "object",
                     "description": "Optional column → value filter map.",
                 },
-                "limit": {"type": "integer", "minimum": 1, "maximum": 100},
+                "limit": {"type": "integer", "description": "Max rows to return (1–100)."},
             },
             "required": ["x"],
         },
