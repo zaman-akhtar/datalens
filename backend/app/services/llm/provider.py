@@ -10,6 +10,7 @@ The interface is the **single swap point** for changing provider (ADR-001).
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from typing import Any, Protocol
 
@@ -118,6 +119,52 @@ class GeminiProvider:
 # Groq implementation
 # ---------------------------------------------------------------------------
 
+# Llama models on Groq sometimes fall back to XML-style function calls.
+# Groq rejects these with a 400 embedding the raw generation in the error.
+# Two observed formats:
+#   <function=name {"arg": "val"}></function>   (JSON as pseudo-attribute)
+#   <function=name>{"arg": "val"}</function>    (JSON as body)
+_XML_TOOL_NAME_RE = re.compile(r"<function=(\w+)")
+
+
+def _find_json_in(text: str, start: int) -> str | None:
+    """Extract the first balanced JSON object from text starting at index start."""
+    i = text.find("{", start)
+    if i < 0:
+        return None
+    depth, in_str, escape = 0, False, False
+    for j in range(i, len(text)):
+        ch = text[j]
+        if escape:
+            escape = False
+        elif ch == "\\" and in_str:
+            escape = True
+        elif ch == '"':
+            in_str = not in_str
+        elif not in_str:
+            if ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    return text[i : j + 1]
+    return None
+
+
+def _parse_xml_tool_call(text: str) -> ToolCall | None:
+    """Return a ToolCall parsed from Groq's XML fallback, or None."""
+    m = _XML_TOOL_NAME_RE.search(text)
+    if not m:
+        return None
+    json_str = _find_json_in(text, m.end())
+    if json_str is None:
+        return None
+    try:
+        args = json.loads(json_str)
+    except json.JSONDecodeError:
+        return None
+    return ToolCall(name=m.group(1), args=args)
+
 
 class GroqProvider:
     """Wraps the Groq SDK (OpenAI-compatible API).
@@ -202,10 +249,21 @@ class GroqProvider:
                 tool_choice="auto" if groq_tools else None,
             )
         except Exception as e:  # noqa: BLE001
+            # Llama models occasionally fall back to XML function syntax.
+            # Groq rejects these with 400 + the raw generation in the error.
+            xml_tc = _parse_xml_tool_call(str(e))
+            if xml_tc:
+                return ProviderResponse(tool_calls=[xml_tc])
             raise ProviderError(str(e)) from e
 
         choice = resp.choices[0]
         msg_out = choice.message
+
+        # Guard against XML fallback in a 200 response content field.
+        if not msg_out.tool_calls and msg_out.content:
+            xml_tc = _parse_xml_tool_call(msg_out.content)
+            if xml_tc:
+                return ProviderResponse(tool_calls=[xml_tc])
 
         if msg_out.tool_calls:
             tool_calls = [

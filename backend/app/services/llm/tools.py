@@ -32,7 +32,7 @@ TOOL_SCHEMAS = [
                 "agg": {
                     "type": "string",
                     "enum": ["count", "sum", "mean", "min", "max", "median"],
-                    "description": "Aggregation function.",
+                    "description": "Aggregation function. Use 'mean' to compute rates and averages (e.g. fraud rate = mean of is_fraud).",
                 },
                 "filters": {
                     "type": "object",
